@@ -147,13 +147,54 @@ class Human < Player
   end
 end
 
+module Personality
+  def computer_moves(name)
+    case name
+    when 'R2D2'
+      r2d2_moves
+    when 'Hal'
+      hal_moves
+    when 'Chappie'
+      random_moves
+    when 'Sonny'
+      random_moves
+    when 'Number 5'
+      number_5_moves
+    end
+  end
+
+  def r2d2_moves
+    'rock'
+  end
+
+  def hal_moves
+    hal_choices = ['lizard', 'spock']
+    hal_choices.fill('scissors', 2, 5)
+    hal_choices.fill('rock', 7, 3)
+    hal_choices.sample
+  end
+
+  def number_5_moves
+    johnny_choices = []
+    johnny_choices.fill('lizard', 0, 5)
+    johnny_choices.fill('spock', 5, 5)
+    johnny_choices.sample
+  end
+
+  def random_moves
+    Move::VALUES.sample
+  end
+end
+
 class Computer < Player
+  include Personality
+
   def set_name
     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
   def choose
-    choice = Move::VALUES.sample
+    choice = computer_moves(name)
     self.move = create_moveclass(choice)
     @move_history << choice
   end
@@ -246,22 +287,38 @@ class RPSGame
     puts
   end
 
+  def next_round
+    puts "Hit enter to start the next round."
+    gets.chomp
+    clear
+  end
+
+  def clear
+    system('clear') || system('cls')
+  end
+
   def play
     display_welcome_message
     @human.set_name
     @computer.set_name
     loop do
-      loop do
-        display_history unless @human.move_history.empty?
-        @human.choose
-        @computer.choose
-        display_moves
-        display_winner
-        break if game_over?
-      end
+      start_match
       play_again? ? reset_game : break
+      clear
     end
     display_goodbye_message
+  end
+
+  def start_match
+    loop do
+      display_history unless @human.move_history.empty?
+      @human.choose
+      @computer.choose
+      display_moves
+      display_winner
+      break if game_over?
+      next_round
+    end
   end
 end
 
