@@ -95,10 +95,11 @@ class Score
 end
 
 class Player
-  attr_accessor :move, :name, :score
+  attr_accessor :move, :name, :score, :move_history
 
   def initialize
     @score = Score.new
+    @move_history = []
   end
 
   def create_moveclass(value)
@@ -138,6 +139,7 @@ class Human < Player
       puts "Sorry, invalid choice"
     end
     self.move = create_moveclass(choice)
+    @move_history << choice
   end
 
   def win
@@ -151,7 +153,9 @@ class Computer < Player
   end
 
   def choose
-    self.move = create_moveclass(Move::VALUES.sample)
+    choice = Move::VALUES.sample
+    self.move = create_moveclass(choice)
+    @move_history << choice
   end
 
   def win
@@ -179,8 +183,10 @@ class RPSGame
   end
 
   def display_moves
+    puts
     puts "#{human.name} chose #{human.move}"
     puts "#{computer.name} chose #{computer.move}"
+    puts
   end
 
   def display_winner
@@ -222,25 +228,38 @@ class RPSGame
       (computer.score.points == WINNING_SCORE)
   end
 
-  def reset_score
+  def reset_game
     human.score.points = 0
     computer.score.points = 0
     @ties = 0
+    human.move_history.clear
+    computer.move_history.clear
+  end
+
+  def display_history
+    puts
+    puts "Here are the previous moves made by #{human.name}:"
+    puts human.move_history.to_s
+    puts "-" * 40
+    puts "Here are the previous moves made by #{computer.name}:"
+    puts computer.move_history.to_s
+    puts
   end
 
   def play
     display_welcome_message
-    human.set_name
-    computer.set_name
+    @human.set_name
+    @computer.set_name
     loop do
       loop do
-        human.choose
-        computer.choose
+        display_history unless @human.move_history.empty?
+        @human.choose
+        @computer.choose
         display_moves
         display_winner
         break if game_over?
       end
-      play_again? ? reset_score : break
+      play_again? ? reset_game : break
     end
     display_goodbye_message
   end
