@@ -205,13 +205,27 @@ end
 # Game Orchestration Engine
 class RPSGame
   WINNING_SCORE = 10
-  attr_accessor :human, :computer, :score, :ties
+  attr_accessor :human, :computer
 
   def initialize
     @human = Human.new
     @computer = Computer.new
     @ties = 0
   end
+
+  def play
+    display_welcome_message
+    @human.set_name
+    @computer.set_name
+    loop do
+      start_match
+      play_again? ? reset_game : break
+      clear
+    end
+    display_goodbye_message
+  end
+
+  private
 
   def display_welcome_message
     puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
@@ -293,18 +307,6 @@ class RPSGame
 
   def clear
     system('clear') || system('cls')
-  end
-
-  def play
-    display_welcome_message
-    @human.set_name
-    @computer.set_name
-    loop do
-      start_match
-      play_again? ? reset_game : break
-      clear
-    end
-    display_goodbye_message
   end
 
   def start_match
