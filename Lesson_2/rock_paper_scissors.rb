@@ -27,34 +27,58 @@ class Move
     @value == 'spock'
   end
 
+  def to_s
+    @value
+  end
+end
+
+class Rock < Move
   def >(other_move)
-    (rock? && other_move.scissors?) ||
-      (rock? && other_move.lizard?) ||
-      (paper? && other_move.rock?) ||
-      (paper? && other_move.spock?) ||
-      (scissors? && other_move.paper?) ||
-      (scissors? && other_move.lizard?) ||
-      (lizard? && other_move.paper?) ||
-      (lizard? && other_move.spock?) ||
-      (spock? && other_move.rock?) ||
-      (spock? && other_move.scissors?)
+    other_move.scissors? || other_move.lizard?
   end
 
   def <(other_move)
-    (rock? && other_move.paper?) ||
-      (rock? && other_move.spock?) ||
-      (paper? && other_move.scissors?) ||
-      (paper? && other_move.lizard?) ||
-      (scissors? && other_move.rock?) ||
-      (scissors? && other_move.spock?) ||
-      (lizard? && other_move.rock?) ||
-      (lizard? && other_move.scissors?) ||
-      (spock? && other_move.lizard?) ||
-      (spock? && other_move.paper?)
+    other_move.paper? || other_move.spock?
+  end
+end
+
+class Paper < Move
+  def >(other_move)
+    other_move.rock? || other_move.spock?
   end
 
-  def to_s
-    @value
+  def <(other_move)
+    other_move.scissors? || other_move.lizard?
+  end
+end
+
+class Scissors < Move
+  def >(other_move)
+    other_move.paper? || other_move.lizard?
+  end
+
+  def <(other_move)
+    other_move.rock? || other_move.spock?
+  end
+end
+
+class Lizard < Move
+  def >(other_move)
+    other_move.paper? || other_move.spock?
+  end
+
+  def <(other_move)
+    other_move.rock? || other_move.scissors?
+  end
+end
+
+class Spock < Move
+  def >(other_move)
+    other_move.rock? || other_move.scissors?
+  end
+
+  def <(other_move)
+    other_move.lizard? || other_move.paper?
   end
 end
 
@@ -75,6 +99,21 @@ class Player
 
   def initialize
     @score = Score.new
+  end
+
+  def create_moveclass(value)
+    case value
+    when 'rock'
+      Rock.new(value)
+    when 'paper'
+      Paper.new(value)
+    when 'scissors'
+      Scissors.new(value)
+    when 'lizard'
+      Lizard.new(value)
+    when 'spock'
+      Spock.new(value)
+    end
   end
 end
 
@@ -98,7 +137,7 @@ class Human < Player
       break if Move::VALUES.include?(choice)
       puts "Sorry, invalid choice"
     end
-    self.move = Move.new(choice)
+    self.move = create_moveclass(choice)
   end
 
   def win
@@ -112,7 +151,7 @@ class Computer < Player
   end
 
   def choose
-    self.move = Move.new(Move::VALUES.sample)
+    self.move = create_moveclass(Move::VALUES.sample)
   end
 
   def win
@@ -132,11 +171,11 @@ class RPSGame
   end
 
   def display_welcome_message
-    puts "Welcome to Rock, Paper, Scissors!"
+    puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
   end
 
   def display_goodbye_message
-    puts "Thanks for playing Rock, Paper, Scissors. Good bye!"
+    puts "Thanks for playing Rock, Paper, Scissors, Lizard, Spock. Good bye!"
   end
 
   def display_moves
@@ -145,16 +184,17 @@ class RPSGame
   end
 
   def display_winner
-    if human.move > computer.move
+    if @human.move > @computer.move
       puts "#{@human.name} won!"
       @human.win
-    elsif human.move < computer.move
+    elsif @human.move < @computer.move
       puts "#{@computer.name} won!"
       @computer.win
     else
       puts "It's a tie!"
       @ties += 1
     end
+    display_score
   end
 
   def display_score
@@ -182,6 +222,12 @@ class RPSGame
       (computer.score.points == WINNING_SCORE)
   end
 
+  def reset_score
+    human.score.points = 0
+    computer.score.points = 0
+    @ties = 0
+  end
+
   def play
     display_welcome_message
     human.set_name
@@ -192,10 +238,9 @@ class RPSGame
         computer.choose
         display_moves
         display_winner
-        display_score
         break if game_over?
       end
-      break unless play_again?
+      play_again? ? reset_score : break
     end
     display_goodbye_message
   end
