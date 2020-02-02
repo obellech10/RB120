@@ -1,3 +1,5 @@
+require 'pry'
+
 class Move
   VALUES = ['rock', 'paper', 'scissors']
 
@@ -34,19 +36,27 @@ class Move
   end
 end
 
-class Player
-  attr_accessor :move, :name
+class Score
+  attr_accessor :points
 
   def initialize
-    # @player_type = player_type
-    # @move = nil
-    # set_name
+    @points = 0
+  end
+
+  def add_point
+    @points += 1
+  end
+end
+
+class Player
+  attr_accessor :move, :name, :score
+
+  def initialize
+    @score = Score.new
   end
 end
 
 class Human < Player
-  # attr_accessor :move, :name
-
   def set_name
     n = ""
     loop do
@@ -68,11 +78,13 @@ class Human < Player
     end
     self.move = Move.new(choice)
   end
+
+  def win
+    score.add_point
+  end
 end
 
 class Computer < Player
-  # attr_accessor :move, :name
-
   def set_name
     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
@@ -80,15 +92,21 @@ class Computer < Player
   def choose
     self.move = Move.new(Move::VALUES.sample)
   end
+
+  def win
+    score.add_point
+  end
 end
 
 # Game Orchestration Engine
 class RPSGame
-  attr_accessor :human, :computer
+  WINNING_SCORE = 10
+  attr_accessor :human, :computer, :score, :ties
 
   def initialize
     @human = Human.new
     @computer = Computer.new
+    @ties = 0
   end
 
   def display_welcome_message
@@ -106,12 +124,22 @@ class RPSGame
 
   def display_winner
     if human.move > computer.move
-      puts "#{human.name} won!"
+      puts "#{@human.name} won!"
+      @human.win
     elsif human.move < computer.move
-      puts "#{computer.name} won!"
+      puts "#{@computer.name} won!"
+      @computer.win
     else
       puts "It's a tie!"
+      @ties += 1
     end
+  end
+
+  def display_score
+    puts "The score is:"
+    puts "=> #{human.name}: #{human.score.points}"
+    puts "=> #{computer.name}: #{computer.score.points}"
+    puts "=> Ties: #{@ties}"
   end
 
   def play_again?
@@ -127,17 +155,25 @@ class RPSGame
     return true if answer.downcase == 'y'
   end
 
+  def game_over?
+    (human.score.points == WINNING_SCORE) ||
+      (computer.score.points == WINNING_SCORE)
+  end
+
   def play
     display_welcome_message
     human.set_name
     computer.set_name
     loop do
-      human.choose
-      computer.choose
-      display_moves
-      display_winner
+      loop do
+        human.choose
+        computer.choose
+        display_moves
+        display_winner
+        display_score
+        break if game_over?
+      end
       break unless play_again?
-      system 'clear'
     end
     display_goodbye_message
   end
