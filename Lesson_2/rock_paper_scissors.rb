@@ -131,7 +131,7 @@ class Human < Player
   def choose
     choice = nil
     loop do
-      puts "Please choose between #{Move::VALUES}"
+      puts "Please choose between #{Move::VALUES.join(", ")}."
       choice = gets.chomp
       break if Move::VALUES.include?(choice)
       puts "Sorry, invalid choice"
@@ -229,6 +229,7 @@ class RPSGame
 
   def display_welcome_message
     puts "Welcome to Rock, Paper, Scissors, Lizard, Spock!"
+    puts "The first player to reach #{WINNING_SCORE} points, wins!"
   end
 
   def display_goodbye_message
