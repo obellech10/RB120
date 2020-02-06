@@ -10,8 +10,8 @@ class Board
     reset
   end
 
-  def set_square_at(key, marker)
-    @squares[key].marker = marker
+  def []=(square, marker)
+    @squares[square].marker = marker
   end
 
   def unmarked_keys
@@ -118,11 +118,11 @@ class TTTGame
       break if board.unmarked_keys.include?(square)
       puts "Sorry, that's not a valid choice."
     end
-    board.set_square_at(square, human.marker)
+    board[square] = human.marker
   end
 
   def computer_moves
-    board.set_square_at(board.unmarked_keys.sample, computer.marker)
+    board[empty_squares.sample] = computer.marker
   end
 
   def display_result
@@ -200,6 +200,10 @@ class TTTGame
     puts ''
     board.draw
     puts ''
+  end
+
+  def empty_squares
+    board.unmarked_keys
   end
 end
 
