@@ -107,16 +107,54 @@ class TTTGame
     @board = Board.new
     @human = Player.new(HUMAN_MARKER)
     @computer = Player.new(COMPUTER_MARKER)
+    @current_player = human
   end
 
+  def play
+    display_welcome_message
+
+    loop do
+      display_board
+
+      loop do
+        current_player_moves
+        break if game_over?
+        clear_screen_and_display_board
+      end
+
+      display_result
+      break unless play_again?
+      reset_game
+      display_play_again_message
+    end
+
+    display_goodbye_message
+  end
+
+  private
+
   def display_welcome_message
+    clear
     puts 'Welcome to Tic Tac Toe!'
     puts ''
   end
 
-  def display_goodbye_message
-    clear
-    puts 'Thanks for playing Tic Tac Toe. Goodbye!'
+  def display_board
+    puts "You're a #{human.marker}. Computer is a #{computer.marker}."
+    puts ''
+    board.draw
+    puts ''
+  end
+
+  def current_player_moves
+    case @current_player.marker
+    when 'X'
+      human_moves
+      @current_player = computer
+    when 'O'
+      computer_moves
+      @current_player = human
+    end
   end
 
   def human_moves
@@ -132,6 +170,15 @@ class TTTGame
 
   def computer_moves
     board[empty_squares.sample] = computer.marker
+  end
+
+  def game_over?
+    board.someone_won? || board.full?
+  end
+
+  def clear_screen_and_display_board
+    clear
+    display_board
   end
 
   def display_result
@@ -158,42 +205,6 @@ class TTTGame
     answer == 'y'
   end
 
-  def play
-    clear
-    display_welcome_message
-
-    loop do
-      display_board
-
-      loop do
-        human_moves
-        break if board.someone_won? || board.full?
-
-        computer_moves
-        break if board.someone_won? || board.full?
-
-        clear_screen_and_display_board
-      end
-      display_result
-      break unless play_again?
-
-      reset_game
-      display_play_again_message
-    end
-    display_goodbye_message
-  end
-
-  private
-
-  def clear
-    system('clear') || system('clr')
-  end
-
-  def clear_screen_and_display_board
-    clear
-    display_board
-  end
-
   def reset_game
     board.reset
     clear
@@ -202,13 +213,19 @@ class TTTGame
   def display_play_again_message
     puts "Let's play again!"
     puts ''
+    if @current_player == computer
+      puts "The computer will now play first. Hit enter when ready..."
+      ready = gets.chomp
+    end
   end
 
-  def display_board
-    puts "You're a #{human.marker}. Computer is a #{computer.marker}."
-    puts ''
-    board.draw
-    puts ''
+  def display_goodbye_message
+    clear
+    puts 'Thanks for playing Tic Tac Toe. Goodbye!'
+  end
+
+  def clear
+    system('clear') || system('clr')
   end
 
   def empty_squares
