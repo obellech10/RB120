@@ -26,25 +26,6 @@ class Board
     !!winning_marker
   end
 
-  def count_human_marker(squares)
-    squares.collect(&:marker).count(TTTGame::HUMAN_MARKER)
-  end
-
-  def count_computer_marker(squares)
-    squares.collect(&:marker).count(TTTGame::COMPUTER_MARKER)
-  end
-
-  def winning_marker
-    WINNING_LINES.each do |line|
-      if count_human_marker(@squares.values_at(*line)) == 3
-        return TTTGame::HUMAN_MARKER
-      elsif count_computer_marker(@squares.values_at(*line)) == 3
-        return TTTGame::COMPUTER_MARKER
-      end
-    end
-    nil
-  end
-
   def reset
     (1..9).each { |key| @squares[key] = Square.new }
   end
@@ -61,6 +42,34 @@ class Board
     puts "     |     |"
     puts "  #{@squares[7]}  |  #{@squares[8]}  |  #{@squares[9]}"
     puts "     |     |"
+  end
+
+  def winning_marker
+    WINNING_LINES.each do |line|
+      next if empty_line?(line)
+
+      line_values = values(line)
+      if line_values.uniq.count == 1
+        return line_values.first
+      end
+    end
+    nil
+  end
+
+  private
+
+  def empty_line?(line)
+    squares = square_values(line)
+    squares.collect(&:marker).all? { |marker| marker == ' ' }
+  end
+
+  def values(line)
+    squares = square_values(line)
+    squares.collect(&:marker)
+  end
+
+  def square_values(line)
+    @squares.values_at(*line)
   end
 end
 
@@ -111,7 +120,7 @@ class TTTGame
   end
 
   def human_moves
-    puts "Chose a square (#{board.unmarked_keys.join(", ")})"
+    puts "Chose a square (#{empty_squares.join(", ")})"
     square = nil
     loop do
       square = gets.chomp.to_i
