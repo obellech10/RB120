@@ -27,7 +27,7 @@ class Board
   end
 
   def someone_won?
-    !!detect_winner
+    !!winning_marker
   end
 
   def count_human_marker(squares)
@@ -38,7 +38,7 @@ class Board
     squares.collect(&:marker).count(TTTGame::COMPUTER_MARKER)
   end
 
-  def detect_winner
+  def winning_marker
     WINNING_LINES.each do |line|
       if count_human_marker(@squares.values_at(*line)) == 3
         return TTTGame::HUMAN_MARKER
@@ -117,11 +117,6 @@ class TTTGame
     puts ""
   end
 
-  def clear_screen_and_display_board
-    clear
-    display_board
-  end
-
   def human_moves
     puts "Chose a square (#{board.unmarked_keys.join(", ")})"
     square = nil
@@ -140,9 +135,9 @@ class TTTGame
   def display_result
     clear
     display_board
-    if board.detect_winner == HUMAN_MARKER
+    if board.winning_marker == HUMAN_MARKER
       puts "You won!"
-    elsif board.detect_winner == COMPUTER_MARKER
+    elsif board.winning_marker == COMPUTER_MARKER
       puts "Computer won!"
     else
       puts "It's a tie."
@@ -180,9 +175,8 @@ class TTTGame
       display_result
       break unless play_again?
 
-      board.reset
-      clear
-      puts "Let's play again!"
+      reset_game
+      display_play_again_message
     end
     display_goodbye_message
   end
@@ -191,6 +185,21 @@ class TTTGame
 
   def clear
     system('clear') || system('clr')
+  end
+
+  def clear_screen_and_display_board
+    clear
+    display_board
+  end
+
+  def reset_game
+    board.reset
+    clear
+  end
+
+  def display_play_again_message
+    puts "Let's play again!"
+    puts ''
   end
 end
 
