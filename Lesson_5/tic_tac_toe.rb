@@ -52,6 +52,20 @@ class Board
   def reset
     (1..9).each { |key| @squares[key] = Square.new }
   end
+
+  def draw
+    puts "     |     |"
+    puts "  #{get_square_at(1)}  |  #{get_square_at(2)}  |  #{get_square_at(3)}"
+    puts "     |     |"
+    puts "-----+-----+-----"
+    puts "     |     |"
+    puts "  #{get_square_at(4)}  |  #{get_square_at(5)}  |  #{get_square_at(6)}"
+    puts "     |     |"
+    puts "-----+-----+-----"
+    puts "     |     |"
+    puts "  #{get_square_at(7)}  |  #{get_square_at(8)}  |  #{get_square_at(9)}"
+    puts "     |     |"
+  end
 end
 
 class Square
@@ -98,23 +112,6 @@ class TTTGame
   def display_goodbye_message
     clear
     puts 'Thanks for playing Tic Tac Toe. Goodbye!'
-  end
-
-  def display_board
-    puts "You're a #{human.marker}. Computer is a #{computer.marker}."
-    puts ""
-    puts "     |     |"
-    puts "  #{board.get_square_at(1)}  |  #{board.get_square_at(2)}  |  #{board.get_square_at(3)}"
-    puts "     |     |"
-    puts "-----+-----+-----"
-    puts "     |     |"
-    puts "  #{board.get_square_at(4)}  |  #{board.get_square_at(5)}  |  #{board.get_square_at(6)}"
-    puts "     |     |"
-    puts "-----+-----+-----"
-    puts "     |     |"
-    puts "  #{board.get_square_at(7)}  |  #{board.get_square_at(8)}  |  #{board.get_square_at(9)}"
-    puts "     |     |"
-    puts ""
   end
 
   def human_moves
@@ -199,6 +196,13 @@ class TTTGame
 
   def display_play_again_message
     puts "Let's play again!"
+    puts ''
+  end
+
+  def display_board
+    puts "You're a #{human.marker}. Computer is a #{computer.marker}."
+    puts ''
+    board.draw
     puts ''
   end
 end
