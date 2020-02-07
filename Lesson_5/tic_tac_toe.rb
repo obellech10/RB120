@@ -30,6 +30,7 @@ class Board
     (1..9).each { |key| @squares[key] = Square.new }
   end
 
+  # rubocop:disable Metrics/AbcSize
   def draw
     puts "     |     |"
     puts "  #{@squares[1]}  |  #{@squares[2]}  |  #{@squares[3]}"
@@ -43,20 +44,21 @@ class Board
     puts "  #{@squares[7]}  |  #{@squares[8]}  |  #{@squares[9]}"
     puts "     |     |"
   end
+  # rubocop:enable Metrics/AbcSize
 
   def winning_marker
     WINNING_LINES.each do |line|
       next if empty_line?(line)
 
       line_values = values(line)
-      if line_values.uniq.count == 1
-        return line_values.first
-      end
+      return line_values.first if line_values.uniq.count == 1
     end
     nil
   end
 
   private
+
+  attr_reader :squares
 
   def empty_line?(line)
     squares = square_values(line)
@@ -115,13 +117,7 @@ class TTTGame
 
     loop do
       display_board
-
-      loop do
-        current_player_moves
-        break if game_over?
-        clear_screen_and_display_board
-      end
-
+      start_game
       display_result
       break unless play_again?
       reset_game
@@ -144,6 +140,14 @@ class TTTGame
     puts ''
     board.draw
     puts ''
+  end
+
+  def start_game
+    loop do
+      current_player_moves
+      break if game_over?
+      clear_screen_and_display_board
+    end
   end
 
   def current_player_moves
@@ -213,15 +217,14 @@ class TTTGame
   def display_play_again_message
     puts "Let's play again!"
     puts ''
-    if @current_player == computer
-      puts "The computer will now play first. Hit enter when ready..."
-      ready = gets.chomp
-    end
+    return if @current_player == human
+    puts "The computer will now play first. Hit enter when ready..."
+    _ = gets.chomp
   end
 
   def display_goodbye_message
     clear
-    puts 'Thanks for playing Tic Tac Toe. Goodbye!'
+    puts "Thanks for playing Tic Tac Toe. Goodbye!"
   end
 
   def clear
