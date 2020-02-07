@@ -94,13 +94,21 @@ end
 
 class Player
   attr_reader :marker
+  attr_accessor :name, :wins
 
   def initialize(marker)
     @marker = marker
+    @wins = 0
+    @name = nil
+  end
+
+  def update_score
+    @wins += 1
   end
 end
 
 class TTTGame
+  WINNING_SCORE = 5
   HUMAN_MARKER = 'X'.freeze
   COMPUTER_MARKER = 'O'.freeze
   attr_reader :board, :human, :computer
@@ -110,17 +118,17 @@ class TTTGame
     @human = Player.new(HUMAN_MARKER)
     @computer = Player.new(COMPUTER_MARKER)
     @current_player = human
+    @ties = 0
   end
 
   def play
     display_welcome_message
 
     loop do
-      display_board
-      start_game
-      display_result
+      start_match
       break unless play_again?
-      reset_game
+      reset_board
+      reset_score
       display_play_again_message
     end
 
@@ -133,10 +141,33 @@ class TTTGame
     clear
     puts 'Welcome to Tic Tac Toe!'
     puts ''
+    enter_player_names
+  end
+
+  def start_match
+    loop do
+      display_board
+      start_game
+      display_game_result
+      display_score
+      break if match_over?
+      display_next_game_message
+      reset_board
+    end
+  end
+
+  def enter_player_names
+    puts "What is your name?"
+    human_player_name = gets.chomp.capitalize
+    human.name = human_player_name
+    computer.name = "Watson"
+    puts ''
+    puts "Hello, today you will be playing against #{computer.name}."
+    puts ''
   end
 
   def display_board
-    puts "You're a #{human.marker}. Computer is a #{computer.marker}."
+    puts "You're a #{human.marker}. #{computer.name} is a #{computer.marker}."
     puts ''
     board.draw
     puts ''
@@ -196,16 +227,36 @@ class TTTGame
     display_board
   end
 
-  def display_result
+  def display_game_result
     clear
     display_board
     if board.winning_marker == HUMAN_MARKER
       puts "You won!"
+      human.update_score
     elsif board.winning_marker == COMPUTER_MARKER
-      puts "Computer won!"
+      puts "#{computer.name} won!"
+      computer.update_score
     else
       puts "It's a tie."
+      @ties += 1
     end
+  end
+
+  def display_score
+    puts "The score is:"
+    puts "#{human.name}: #{human.wins}"
+    puts "#{computer.name}: #{computer.wins}"
+    puts "Ties: #{@ties}"
+    puts ''
+  end
+
+  def match_over?
+    computer.wins == 5 || human.wins == 5
+  end
+
+  def display_next_game_message
+    puts "#{@current_player.name} will now play first. Hit enter when ready..."
+    _ = gets.chomp
   end
 
   def play_again?
@@ -220,17 +271,21 @@ class TTTGame
     answer == 'y'
   end
 
-  def reset_game
+  def reset_board
     board.reset
     clear
+  end
+
+  def reset_score
+    human.wins = 0
+    computer.wins = 0
+    @ties = 0
   end
 
   def display_play_again_message
     puts "Let's play again!"
     puts ''
-    return if @current_player == human
-    puts "The computer will now play first. Hit enter when ready..."
-    _ = gets.chomp
+    display_next_game_message
   end
 
   def display_goodbye_message
