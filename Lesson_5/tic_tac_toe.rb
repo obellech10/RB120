@@ -135,8 +135,7 @@ class Player
   attr_reader :marker
   attr_accessor :name, :wins, :marker
 
-  def initialize(marker)
-    @marker = marker
+  def initialize
     @wins = 0
     @name = nil
   end
@@ -144,18 +143,20 @@ class Player
   def update_score
     @wins += 1
   end
+
+  def assign(marker)
+    @marker = marker
+  end
 end
 
 class TTTGame
   WINNING_SCORE = 1
-  HUMAN_MARKER = 'X'
-  COMPUTER_MARKER = 'O'
   attr_reader :board, :human, :computer
 
   def initialize
     @board = Board.new
-    @human = Player.new(HUMAN_MARKER)
-    @computer = Player.new(COMPUTER_MARKER)
+    @human = Player.new
+    @computer = Player.new
     @current_player = human
     @ties = 0
   end
@@ -181,7 +182,7 @@ class TTTGame
     puts 'Welcome to Tic Tac Toe!'
     puts ''
     enter_player_names
-    # choose_player_marker
+    choose_player_marker
   end
 
   def start_match
@@ -223,18 +224,22 @@ class TTTGame
     puts "Choose which marker you'd like to use: (X or O)"
     marker = nil
     loop do
-      marker = gets.chomp
+      marker = gets.chomp.upcase
       break if marker == "X" || marker == "O"
       puts "Sorry that's not a valid marker"
     end
-    # case marker
-    # when "X"
-    #   human.marker = "X"
-    #   computer.marker = "O"
-    # when "O"
-    #   human.marker = "O"
-    #   computer.marker = "X"
-    # end
+    assign_constants(marker)
+  end
+
+  def assign_constants(marker)
+    case marker
+    when "X"
+      human.assign(TTTGame.const_set("HUMAN_MARKER", "X"))
+      computer.assign(TTTGame.const_set("COMPUTER_MARKER", "O"))
+    when "O"
+      human.assign(TTTGame.const_set("HUMAN_MARKER", "O"))
+      computer.assign(TTTGame.const_set("COMPUTER_MARKER", "X"))
+    end
   end
 
   def display_board
@@ -253,11 +258,11 @@ class TTTGame
   end
 
   def current_player_moves
-    case @current_player.marker
-    when 'X'
+    case @current_player
+    when human
       human_moves
       @current_player = computer
-    when 'O'
+    when computer
       computer_moves
       @current_player = human
     end
