@@ -14,6 +14,10 @@ class Board
     @squares[square].marker = marker
   end
 
+  def [](square)
+    @squares[square]
+  end
+
   def unmarked_keys
     @squares.keys.select { |key| @squares[key].unmarked? }
   end
@@ -56,6 +60,13 @@ class Board
     nil
   end
 
+  def game_ending_square
+    square = nil
+    square = offensive_computer_square if !square
+    square = defensive_computer_square if !square
+    square
+  end
+
   private
 
   attr_reader :squares
@@ -70,13 +81,41 @@ class Board
     squares.collect(&:marker)
   end
 
+  def offensive_computer_square
+    square_to_fill = nil
+    WINNING_LINES.each do |line|
+      if values(line).count(TTTGame::COMPUTER_MARKER) == 2
+        line.each do |square|
+          if @squares[square].marker == Square::INITIAL_MARKER
+            square_to_fill = square
+          end
+        end
+      end
+    end
+    square_to_fill
+  end
+
+  def defensive_computer_square
+    square_to_fill = nil
+    WINNING_LINES.each do |line|
+      if values(line).count(TTTGame::HUMAN_MARKER) == 2
+        line.each do |square|
+          if @squares[square].marker == Square::INITIAL_MARKER
+            square_to_fill = square
+          end
+        end
+      end
+    end
+    square_to_fill
+  end
+
   def square_values(line)
     @squares.values_at(*line)
   end
 end
 
 class Square
-  INITIAL_MARKER = ' '.freeze
+  INITIAL_MARKER = ' '
   attr_accessor :marker
 
   def initialize(marker = INITIAL_MARKER)
@@ -94,7 +133,7 @@ end
 
 class Player
   attr_reader :marker
-  attr_accessor :name, :wins
+  attr_accessor :name, :wins, :marker
 
   def initialize(marker)
     @marker = marker
@@ -108,9 +147,9 @@ class Player
 end
 
 class TTTGame
-  WINNING_SCORE = 5
-  HUMAN_MARKER = 'X'.freeze
-  COMPUTER_MARKER = 'O'.freeze
+  WINNING_SCORE = 1
+  HUMAN_MARKER = 'X'
+  COMPUTER_MARKER = 'O'
   attr_reader :board, :human, :computer
 
   def initialize
@@ -142,6 +181,7 @@ class TTTGame
     puts 'Welcome to Tic Tac Toe!'
     puts ''
     enter_player_names
+    # choose_player_marker
   end
 
   def start_match
@@ -157,13 +197,44 @@ class TTTGame
   end
 
   def enter_player_names
-    puts "What is your name?"
-    human_player_name = gets.chomp.capitalize
-    human.name = human_player_name
-    computer.name = "Watson"
+    human_player_name
+    computer_player_name
     puts ''
     puts "Hello, today you will be playing against #{computer.name}."
     puts ''
+  end
+
+  def human_player_name
+    puts "What is your name?"
+    name = nil
+    loop do
+      name = gets.chomp.capitalize
+      break if name != ' '
+      puts "Sorry that's not a valid name."
+    end
+    human.name = name
+  end
+
+  def computer_player_name
+    computer.name = ["Watson", "Optimus Prime", "Kitt", "C3PO"].sample
+  end
+
+  def choose_player_marker
+    puts "Choose which marker you'd like to use: (X or O)"
+    marker = nil
+    loop do
+      marker = gets.chomp
+      break if marker == "X" || marker == "O"
+      puts "Sorry that's not a valid marker"
+    end
+    # case marker
+    # when "X"
+    #   human.marker = "X"
+    #   computer.marker = "O"
+    # when "O"
+    #   human.marker = "O"
+    #   computer.marker = "X"
+    # end
   end
 
   def display_board
@@ -215,7 +286,15 @@ class TTTGame
   end
 
   def computer_moves
-    board[empty_squares.sample] = computer.marker
+    square = board.game_ending_square
+
+    if square
+      board[square] = computer.marker
+    elsif board[5].marker == Square::INITIAL_MARKER
+      board[5] = computer.marker
+    else
+      board[empty_squares.sample] = computer.marker
+    end
   end
 
   def game_over?
@@ -251,7 +330,7 @@ class TTTGame
   end
 
   def match_over?
-    computer.wins == 5 || human.wins == 5
+    computer.wins == WINNING_SCORE || human.wins == WINNING_SCORE
   end
 
   def display_next_game_message
