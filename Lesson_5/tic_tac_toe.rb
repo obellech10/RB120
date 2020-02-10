@@ -1,3 +1,5 @@
+require 'pry'
+
 class Board
   WINNING_LINES = [[1, 2, 3], [4, 5, 6], [7, 8, 9]] +
                   [[1, 4, 7], [2, 5, 8], [3, 6, 9]] +
@@ -58,10 +60,10 @@ class Board
     nil
   end
 
-  def game_ending_square
+  def square_to_play(computer, human)
     square = nil
-    square = offensive_computer_square if !square
-    square = defensive_computer_square if !square
+    square = vulnerable_square(computer) if !square
+    square = vulnerable_square(human) if !square
     square
   end
 
@@ -79,24 +81,10 @@ class Board
     squares.collect(&:marker)
   end
 
-  def offensive_computer_square
+  def vulnerable_square(player)
     square_to_fill = nil
     WINNING_LINES.each do |line|
-      if values(line).count(TTTGame::COMPUTER_MARKER) == 2
-        line.each do |square|
-          if @squares[square].marker == Square::INITIAL_MARKER
-            square_to_fill = square
-          end
-        end
-      end
-    end
-    square_to_fill
-  end
-
-  def defensive_computer_square
-    square_to_fill = nil
-    WINNING_LINES.each do |line|
-      if values(line).count(TTTGame::HUMAN_MARKER) == 2
+      if values(line).count(player.marker) == 2
         line.each do |square|
           if @squares[square].marker == Square::INITIAL_MARKER
             square_to_fill = square
@@ -130,12 +118,13 @@ class Square
 end
 
 class Player
-  attr_reader :marker
+  attr_reader :marker, :type
   attr_accessor :name, :wins, :marker
 
-  def initialize
+  def initialize(type)
     @wins = 0
     @name = nil
+    @type = type
   end
 
   def update_score
@@ -145,6 +134,42 @@ class Player
   def assign(marker)
     @marker = marker
   end
+
+  def player_name
+    if self.type == "human"
+      enter_human_name
+    elsif self.type == "computer"
+      create_computer_name
+    end
+  end
+
+  def choose_marker
+    puts "Choose which marker you'd like to use: (X or O)"
+    marker = nil
+    loop do
+      marker = gets.chomp.upcase
+      break if marker == "X" || marker == "O"
+      puts "Sorry that's not a valid marker"
+    end
+    marker
+  end
+
+  private
+
+  def enter_human_name
+    puts "What is your name?"
+    name = nil
+    loop do
+      name = gets.chomp.capitalize
+      break if name != ' '
+      puts "Sorry that's not a valid name."
+    end
+    self.name = name
+  end
+
+  def create_computer_name
+    self.name = ["Watson", "Optimus Prime", "Kitt", "C3PO"].sample
+  end
 end
 
 class TTTGame
@@ -153,8 +178,8 @@ class TTTGame
 
   def initialize
     @board = Board.new
-    @human = Player.new
-    @computer = Player.new
+    @human = Player.new("human")
+    @computer = Player.new("computer")
     @current_player = human
     @ties = 0
   end
@@ -177,8 +202,9 @@ class TTTGame
 
   def setup_match
     display_welcome_message
-    enter_player_names
-    choose_player_marker
+    determine_player_names
+    marker = human.choose_marker
+    assign(marker)
   end
 
   def display_welcome_message
@@ -200,48 +226,22 @@ class TTTGame
     end
   end
 
-  def enter_player_names
-    human_player_name
-    computer_player_name
+  def determine_player_names
+    human.player_name
+    computer.player_name
     puts ''
     puts "Hello, today you will be playing against #{computer.name}."
     puts ''
   end
 
-  def human_player_name
-    puts "What is your name?"
-    name = nil
-    loop do
-      name = gets.chomp.capitalize
-      break if name != ' '
-      puts "Sorry that's not a valid name."
-    end
-    human.name = name
-  end
-
-  def computer_player_name
-    computer.name = ["Watson", "Optimus Prime", "Kitt", "C3PO"].sample
-  end
-
-  def choose_player_marker
-    puts "Choose which marker you'd like to use: (X or O)"
-    marker = nil
-    loop do
-      marker = gets.chomp.upcase
-      break if marker == "X" || marker == "O"
-      puts "Sorry that's not a valid marker"
-    end
-    assign_constants(marker)
-  end
-
-  def assign_constants(marker)
+  def assign(marker)
     case marker
     when "X"
-      human.assign(TTTGame.const_set("HUMAN_MARKER", "X"))
-      computer.assign(TTTGame.const_set("COMPUTER_MARKER", "O"))
+      human.assign(marker)
+      computer.assign("O")
     when "O"
-      human.assign(TTTGame.const_set("HUMAN_MARKER", "O"))
-      computer.assign(TTTGame.const_set("COMPUTER_MARKER", "X"))
+      human.assign(marker)
+      computer.assign("X")
     end
   end
 
@@ -294,7 +294,7 @@ class TTTGame
   end
 
   def computer_moves
-    square = board.game_ending_square
+    square = board.square_to_play(computer, human)
 
     if square
       board[square] = computer.marker
@@ -317,10 +317,10 @@ class TTTGame
   def display_game_result
     clear
     display_board
-    if board.winning_marker == HUMAN_MARKER
+    if board.winning_marker == human.marker
       puts "You won!"
       human.update_score
-    elsif board.winning_marker == COMPUTER_MARKER
+    elsif board.winning_marker == computer.marker
       puts "#{computer.name} won!"
       computer.update_score
     else
