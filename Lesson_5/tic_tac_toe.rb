@@ -46,7 +46,7 @@ class Board
     puts "-----+-----+-----"
     puts "     |     |"
     puts "  #{@squares[7]}  |  #{@squares[8]}  |  #{@squares[9]}"
-    puts "     |     |"
+    puts "     |     |\n\n"
   end
   # rubocop:enable Metrics/AbcSize
 
@@ -127,7 +127,7 @@ class Player
     @type = type
   end
 
-  def update_score
+  def add_win
     @wins += 1
   end
 
@@ -145,14 +145,22 @@ class Computer < Player
     square = board.square_to_play(self, human)
 
     if square
-      board[square] = self.marker
+      board[square] = marker
     elsif board[5].marker == Square::INITIAL_MARKER
-      board[5] = self.marker
+      board[5] = marker
     else
-      board[board.unmarked_keys.sample] = self.marker
+      board[board.unmarked_keys.sample] = marker
     end
   end
 
+  def assign_marker(human_marker)
+    case human_marker
+    when "X"
+      assign("O")
+    when "O"
+      assign("X")
+    end
+  end
 end
 
 class Human < Player
@@ -175,7 +183,7 @@ class Human < Player
       break if marker == "X" || marker == "O"
       puts "Sorry that's not a valid marker"
     end
-    marker
+    self.marker = marker
   end
 
   def moves(board)
@@ -186,7 +194,7 @@ class Human < Player
       break if board.unmarked_keys.include?(square)
       puts "Sorry, that's not a valid choice."
     end
-    board[square] = self.marker
+    board[square] = marker
   end
 
   private
@@ -234,34 +242,20 @@ class TTTGame
   def setup_match
     display_welcome_message
     determine_player_names
-    marker = human.choose_marker
-    assign_player(marker)
+    human_marker = human.choose_marker
+    computer.assign_marker(human_marker)
   end
 
   def display_welcome_message
     clear
     puts 'Welcome to Tic Tac Toe!'
-    puts "The first player to win #{WINNING_SCORE} games wins the match!"
-    puts ''
+    puts "The first player to win #{WINNING_SCORE} games wins the match!\n\n"
   end
 
   def determine_player_names
     human.enter_name
     computer.create_name
-    puts ''
-    puts "Hello, today you will be playing against #{computer.name}."
-    puts ''
-  end
-
-  def assign_player(marker)
-    case marker
-    when "X"
-      human.assign(marker)
-      computer.assign("O")
-    when "O"
-      human.assign(marker)
-      computer.assign("X")
-    end
+    puts "\nHello, today you will be playing against #{computer.name}.\n\n"
   end
 
   def start_match
@@ -269,6 +263,7 @@ class TTTGame
       display_board
       start_game
       display_game_result
+      update_score
       display_score
       break if match_over?
       display_next_game_message
@@ -277,10 +272,9 @@ class TTTGame
   end
 
   def display_board
-    puts "You're a #{human.marker}. #{computer.name} is a #{computer.marker}."
-    puts ''
+    puts "\nYou're a #{human.marker}. " \
+      "#{computer.name} is a #{computer.marker}.\n\n"
     board.draw
-    puts ''
   end
 
   def start_game
@@ -315,13 +309,20 @@ class TTTGame
     clear
     display_board
     if board.winning_marker == human.marker
-      puts "You won!"
-      human.update_score
+      puts "You won!\n\n"
     elsif board.winning_marker == computer.marker
-      puts "#{computer.name} won!"
-      computer.update_score
+      puts "#{computer.name} won!\n\n"
     else
-      puts "It's a tie."
+      puts "It's a tie.\n\n"
+    end
+  end
+
+  def update_score
+    if board.winning_marker == human.marker
+      human.add_win
+    elsif board.winning_marker == computer.marker
+      computer.add_win
+    else
       @ties += 1
     end
   end
@@ -330,8 +331,7 @@ class TTTGame
     puts "The score is:"
     puts "#{human.name}: #{human.wins}"
     puts "#{computer.name}: #{computer.wins}"
-    puts "Ties: #{@ties}"
-    puts ''
+    puts "Ties: #{@ties}\n\n"
   end
 
   def match_over?
@@ -367,8 +367,7 @@ class TTTGame
   end
 
   def display_play_again_message
-    puts "Let's play again!"
-    puts ''
+    puts "Let's play again!\n\n"
     display_next_game_message
   end
 
@@ -379,10 +378,6 @@ class TTTGame
 
   def clear
     system('clear') || system('clr')
-  end
-
-  def empty_squares
-    board.unmarked_keys
   end
 end
 
