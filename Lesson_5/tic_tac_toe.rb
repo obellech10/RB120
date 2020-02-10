@@ -160,7 +160,7 @@ class TTTGame
   end
 
   def play
-    display_welcome_message
+    setup_match
 
     loop do
       start_match
@@ -175,13 +175,17 @@ class TTTGame
 
   private
 
+  def setup_match
+    display_welcome_message
+    enter_player_names
+    choose_player_marker
+  end
+
   def display_welcome_message
     clear
     puts 'Welcome to Tic Tac Toe!'
     puts "The first player to win #{WINNING_SCORE} games wins the match!"
     puts ''
-    enter_player_names
-    choose_player_marker
   end
 
   def start_match
