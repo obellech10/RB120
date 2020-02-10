@@ -134,13 +134,37 @@ class Player
   def assign(marker)
     @marker = marker
   end
+end
 
-  def player_name
-    if self.type == "human"
-      enter_human_name
-    elsif self.type == "computer"
-      create_computer_name
+class Computer < Player
+  def create_name
+    self.name = ["Watson", "Optimus Prime", "Kitt", "C3PO"].sample
+  end
+
+  def moves(board, human)
+    square = board.square_to_play(self, human)
+
+    if square
+      board[square] = self.marker
+    elsif board[5].marker == Square::INITIAL_MARKER
+      board[5] = self.marker
+    else
+      board[board.unmarked_keys.sample] = self.marker
     end
+  end
+
+end
+
+class Human < Player
+  def enter_name
+    puts "What is your name?"
+    name = nil
+    loop do
+      name = gets.chomp.capitalize
+      break if name != ' '
+      puts "Sorry that's not a valid name."
+    end
+    self.name = name
   end
 
   def choose_marker
@@ -154,21 +178,28 @@ class Player
     marker
   end
 
-  private
-
-  def enter_human_name
-    puts "What is your name?"
-    name = nil
+  def moves(board)
+    puts "Choose a square: #{joinor(board.unmarked_keys)}"
+    square = nil
     loop do
-      name = gets.chomp.capitalize
-      break if name != ' '
-      puts "Sorry that's not a valid name."
+      square = gets.chomp.to_i
+      break if board.unmarked_keys.include?(square)
+      puts "Sorry, that's not a valid choice."
     end
-    self.name = name
+    board[square] = self.marker
   end
 
-  def create_computer_name
-    self.name = ["Watson", "Optimus Prime", "Kitt", "C3PO"].sample
+  private
+
+  def joinor(arr, delimiter = ', ', join_word = 'or')
+    case arr.count
+    when 0 then ''
+    when 1 then arr.first
+    when 2 then arr.join(" #{join_word} ")
+    else
+      arr[-1] = "#{join_word} #{arr.last}"
+      arr.join(delimiter)
+    end
   end
 end
 
@@ -178,8 +209,8 @@ class TTTGame
 
   def initialize
     @board = Board.new
-    @human = Player.new("human")
-    @computer = Player.new("computer")
+    @human = Human.new("human")
+    @computer = Computer.new("computer")
     @current_player = human
     @ties = 0
   end
@@ -204,7 +235,7 @@ class TTTGame
     display_welcome_message
     determine_player_names
     marker = human.choose_marker
-    assign(marker)
+    assign_player(marker)
   end
 
   def display_welcome_message
@@ -212,6 +243,25 @@ class TTTGame
     puts 'Welcome to Tic Tac Toe!'
     puts "The first player to win #{WINNING_SCORE} games wins the match!"
     puts ''
+  end
+
+  def determine_player_names
+    human.enter_name
+    computer.create_name
+    puts ''
+    puts "Hello, today you will be playing against #{computer.name}."
+    puts ''
+  end
+
+  def assign_player(marker)
+    case marker
+    when "X"
+      human.assign(marker)
+      computer.assign("O")
+    when "O"
+      human.assign(marker)
+      computer.assign("X")
+    end
   end
 
   def start_match
@@ -223,25 +273,6 @@ class TTTGame
       break if match_over?
       display_next_game_message
       reset_board
-    end
-  end
-
-  def determine_player_names
-    human.player_name
-    computer.player_name
-    puts ''
-    puts "Hello, today you will be playing against #{computer.name}."
-    puts ''
-  end
-
-  def assign(marker)
-    case marker
-    when "X"
-      human.assign(marker)
-      computer.assign("O")
-    when "O"
-      human.assign(marker)
-      computer.assign("X")
     end
   end
 
@@ -263,45 +294,11 @@ class TTTGame
   def current_player_moves
     case @current_player
     when human
-      human_moves
+      human.moves(board)
       @current_player = computer
     when computer
-      computer_moves
+      computer.moves(board, human)
       @current_player = human
-    end
-  end
-
-  def human_moves
-    puts "Choose a square: #{joinor(empty_squares)}"
-    square = nil
-    loop do
-      square = gets.chomp.to_i
-      break if board.unmarked_keys.include?(square)
-      puts "Sorry, that's not a valid choice."
-    end
-    board[square] = human.marker
-  end
-
-  def joinor(arr, delimiter = ', ', join_word = 'or')
-    case arr.count
-    when 0 then ''
-    when 1 then arr.first
-    when 2 then arr.join(" #{join_word} ")
-    else
-      arr[-1] = "#{join_word} #{arr.last}"
-      arr.join(delimiter)
-    end
-  end
-
-  def computer_moves
-    square = board.square_to_play(computer, human)
-
-    if square
-      board[square] = computer.marker
-    elsif board[5].marker == Square::INITIAL_MARKER
-      board[5] = computer.marker
-    else
-      board[empty_squares.sample] = computer.marker
     end
   end
 
