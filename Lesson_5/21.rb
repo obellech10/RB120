@@ -7,18 +7,39 @@ class Participant
   def initialize
     @hand = nil
     @hand_total = 0
+    @aces = 0
   end
 
   def display_hand
     hand.each do |card|
-      puts "#{card.value} of #{card.suit}"
+      if card.value == 11
+        puts "Ace of #{card.suit}"
+      else
+        puts "#{card.value} of #{card.suit}"
+      end
     end
     puts "\nTotal Value: #{hand_total}"
   end
 
   def calc_hand_total
     hand.each do |card|
-      self.hand_total += card.value
+      if card.value == 11
+        self.hand_total += 11
+        @aces += 1
+      else
+        self.hand_total += card.value
+      end
+    end
+    account_for_aces if @aces > 0
+  end
+
+  def account_for_aces
+    return unless hand_total > 21
+    @aces.times do
+      if @hand_total > 21
+        @hand_total -= 10
+        @aces -= 1
+      end
     end
   end
 
@@ -26,9 +47,11 @@ class Participant
     card = deck.cards.shift
     @hand << card
     self.hand_total += card.value
+    @aces += 1 if card.value == 11
   end
 
   def busted?
+    account_for_aces if @aces > 0
     hand_total > 21
   end
 end
@@ -37,7 +60,11 @@ class Dealer < Participant
   def showing
     puts "\nThe dealer is showing:"
     card = hand.last
-    puts "#{card.value} of #{card.suit}"
+    if card.value == 11
+      puts "Ace of #{card.suit}"
+    else
+      puts "#{card.value} of #{card.suit}"
+    end
   end
 
   def decision(deck)
@@ -85,15 +112,12 @@ class Deck
   end
 
   def reset_and_shuffle
-    # DECK.each do |card, values|
-    # @deck << Card.new(card, values)
+    @cards.clear
     (Card::CARDS).each do |card, values|
       @cards << Card.new(card, values)
     end
-    # @deck.shuffle!
     @cards.shuffle!
   end
-
 end
 
 class Card
@@ -124,8 +148,8 @@ class Card
     @suit = values[1]
   end
 
-  def total_hand_value
-  end
+  # def total_hand_value
+  # end
 end
 
 class Game
@@ -190,6 +214,12 @@ class Game
   end
 
   def deal_cards
+    if deck.cards.count < 10
+      reset_hands
+      deck.reset_and_shuffle
+      puts "Reshuffling deck..."
+    end
+
     @player.hand = @deck.deal(2)
     @dealer.hand = @deck.deal(2)
   end
