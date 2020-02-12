@@ -22,6 +22,18 @@ class Participant
     puts "\nTotal Value: #{total}"
   end
 
+  def hit(deck)
+    card = deck.cards.shift
+    @hand << card
+    total_hand
+  end
+
+  def busted?
+    total > 21
+  end
+
+  private
+
   def total_hand
     @total = 0
     @aces = 0
@@ -38,16 +50,6 @@ class Participant
       @total -= 10
       @aces -= 1
     end
-  end
-
-  def hit(deck)
-    card = deck.cards.shift
-    @hand << card
-    total_hand
-  end
-
-  def busted?
-    total > 21
   end
 end
 
