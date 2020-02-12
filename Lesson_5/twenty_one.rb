@@ -1,114 +1,125 @@
-require 'pry'
 system 'clear'
 
 class Participant
-  attr_accessor :cards, :card_total
+  attr_accessor :hand, :total, :aces
 
   def initialize
-    @cards = nil
-    @card_total = 0
+    @hand = nil
+    @total = 0
+    @aces = 0
   end
 
-  def hand_value
-    cards.each do |card|
-      @card_total += Card::CARD_VALUES[card.to_sym].first
+  def display_hand_and_total
+    total_hand
+    hand.each do |card|
+      if card.value == Card::ACE_VALUE
+        puts "Ace of #{card.suit}"
+      else
+        puts "#{card.value} of #{card.suit}"
+      end
     end
-    # binding.pry
+    puts "\nTotal Value: #{total}"
   end
 
   def hit(deck)
     card = deck.cards.shift
-    cards << card
-    # binding.pry
-    @card_total += Card::CARD_VALUES[card.to_sym].first
-    # will need to increment @total after hit
+    hand << card
+    total_hand
   end
 
   def busted?
-    self.card_total > 21
-    # binding.pry
+    total > Game::WINNING_TOTAL
   end
 
-  def reset_cards
-    cards.clear
-    self.card_total = 0
+  private
+
+  def total_hand
+    @total = 0
+    @aces = 0
+    hand.each do |card|
+      if card.value == Card::ACE_VALUE
+        @total += Card::ACE_VALUE
+        @aces += 1
+      else
+        @total += card.value
+      end
+    end
+    aces.times do
+      break if total <= Game::WINNING_TOTAL
+      @total -= (Card::ACE_VALUE - 1)
+      @aces -= 1
+    end
   end
-  # what goes in here? all the redundant behaviors from Player and Dealer?
-end
-
-class Player < Participant
-  # def initialize
-  #   # what would the "data" or "states" of a Player object entail?
-  #   # maybe cards? a name?
-  # end
-
-  # def hit
-  # end
-
-  def stay
-  end
-
-  # def busted?
-  # end
-
-  # def total
-  #   # definitely looks like we need to know about "cards" to produce some total
-  # end
 end
 
 class Dealer < Participant
-  # def initialize
-  #   # seems like very similar to Player... do we even need this?
-  # end
+  DEALER_STAY_TOTAL = 17
 
-  def deal
-    # does the dealer or the deck deal?
+  def showing
+    puts "\nThe dealer is showing:"
+    card = hand.first
+    if card.value == Card::ACE_VALUE
+      puts "Ace of #{card.suit}"
+    else
+      puts "#{card.value} of #{card.suit}"
+    end
   end
 
-  # def hit
-  # end
-
-  def stay
+  def decision(deck)
+    if total < DEALER_STAY_TOTAL
+      hit(deck)
+    else
+      "stay"
+    end
   end
 
-  # def busted?
-  # end
+  def display_hand_and_total
+    puts "\nThe dealer has the following cards:"
+    super
+  end
+end
 
-  # def total
-  # end
+class Player < Participant
+  def display_hand_and_total
+    puts "\nYou have the following cards:"
+    super
+  end
+
+  def decision
+    puts "\nDo you want to hit(H) or stay(S)? "
+    decision = nil
+    loop do
+      decision = gets.chomp.downcase
+      break if ["hit", "stay", "h", "s"].include?(decision)
+      puts "Sorry, that's an invalid choice. Try again..."
+    end
+    decision
+  end
 end
 
 class Deck
   attr_accessor :cards
 
   def initialize
-    @cards = (Card::CARD_VALUES).keys.map(&:to_s).shuffle!
-    # binding.pry
-    # @cards = Card.new
-    # obviously, we need some data structure to keep track of cards
-    # array, hash, something else?
+    @cards = []
+    reset_and_shuffle
   end
 
-  def deal
-    # does the dealer or the deck deal?
+  def deal(num_of_cards)
+    cards.shift(num_of_cards)
   end
 
-  def reshuffle
-    # needed when starting a new game or after deck has been dealt to minimum value
+  def reset_and_shuffle
+    cards.clear
+    (Card::CARDS).each do |card, values|
+      cards << Card.new(card, values)
+    end
+    cards.shuffle!
   end
 end
 
 class Card
-  # CARD_VALUES = {
-  #   H2: 2, H3: 3, H4: 4, H5: 5, H6: 6, H7: 7, H8: 8, H9: 9, H10: 10, HJ: 10,
-  #   HQ: 10, HK: 10, HA: 11, C2: 2, C3: 3, C4: 4, C5: 5, C6: 6, C7: 7, C8: 8,
-  #   C9: 9, C10: 10, CJ: 10, CQ: 10, CK: 10, CA: 11, D2: 2, D3: 3, D4: 4, D5: 5,
-  #   D6: 6, D7: 7, D8: 8, D9: 9, D10: 10, DJ: 10, DQ: 10, DK: 10, DA: 11, S2: 2,
-  #   S3: 3, S4: 4, S5: 5, S6: 6, S7: 7, S8: 8, S9: 9, S10: 10, SJ: 10, SQ: 10,
-  #   SK: 10, SA: 11
-  # }
-
-  CARD_VALUES = {
+  CARDS = {
     H2: [2, "Hearts"], H3: [3, "Hearts"], H4: [4, "Hearts"], H5: [5, "Hearts"],
     H6: [6, "Hearts"], H7: [7, "Hearts"], H8: [8, "Hearts"], H9: [9, "Hearts"],
     H10: [10, "Hearts"], HJ: [10, "Hearts"], HQ: [10, "Hearts"],
@@ -126,35 +137,21 @@ class Card
     SJ: [10, "Spades"], SQ: [10, "Spades"], SK: [10, "Spades"],
     SA: [11, "Spades"]
   }
+  ACE_VALUE = 11
 
-  def initialize
-    # what are the "states" of a card?
-    # card_values
-    # binding.pry
-    # @value, @suit
+  attr_accessor :value, :suit
+
+  def initialize(card, values)
+    @card = card
+    @value = values[0]
+    @suit = values[1]
   end
-
-  # def card_description(card)
-  #   num, suit = CARD_VALUES[card.to_sym]
-  #   puts "#{num} of #{suit}"
-  #   # binding.pry
-  # end
-
-  # def card_values
-  #   CARD_VALUES.each do |key, details|
-  #     @name = key
-  #     @value = details[0]
-  #     @suit = details[1]
-  #     # value[]
-  #   end
-  #   binding.pry
-  #   # puts "#{num} of #{suit}"
-  #   # binding.pry
-  # end
 end
 
 class Game
-  # include Card
+  WINNING_TOTAL = 21
+  MIN_CARDS_TO_PLAY = 10
+  attr_accessor :deck
 
   def initialize
     @player = Player.new
@@ -163,130 +160,110 @@ class Game
   end
 
   def play
-    # display_welcome_message
-
-      loop do
-        deal_cards
-        show_initial_cards
-        player_turn
-        dealer_turn if !@player.busted?
-        show_result
-        break unless play_again?
-        reset_hand
-      end
-
-    # display_goodbye_message
+    display_welcome_message
+    start_hand
+    display_goodbye_message
   end
 
   private
 
-  def deal_cards
-    @player.cards = @deck.cards.shift(2)
-    @dealer.cards = @deck.cards.shift(2)
-    @player.hand_value
-    @dealer.hand_value
-  end
-
-  def show_initial_cards
-    player_cards
-    dealer_showing
-  end
-
-  def player_cards
-    puts "You have the following cards:"
-    @player.cards.each do |card|
-      num, suit = Card::CARD_VALUES[card.to_sym]
-      puts "#{num} of #{suit}"
+  def start_hand
+    loop do
+      deal_cards
+      player_turn
+      dealer_turn if !@player.busted?
+      clear_screen
+      display_results
+      break unless play_again?
+      clear_screen
     end
-    puts "Total value: #{@player.card_total}"
-    puts
-  end
-
-  def dealer_showing
-    puts "The dealer is showing:"
-    face_up_card = @dealer.cards.first.to_sym
-    num, suit = Card::CARD_VALUES[face_up_card]
-    puts "#{num} of #{suit}"
-    puts ''
-  end
-
-  def dealer_cards
-    puts "The dealer has the following cards:"
-    @dealer.cards.each do |card|
-      num, suit = Card::CARD_VALUES[card.to_sym]
-      puts "#{num} of #{suit}"
-    end
-    puts "Total value: #{@dealer.card_total}"
-    puts
   end
 
   def player_turn
     loop do
-      decision = player_decision
-      @player.hit(@deck) if decision.start_with?("h")
-      break if decision.start_with?("s")
-      player_cards
+      @player.display_hand_and_total
+      @dealer.showing
+      break if @player.decision.start_with?("s")
+      @player.hit(deck)
       break if @player.busted?
+      clear_screen
     end
-  end
-
-  def player_decision
-    puts "Do you want to hit(H) or stay(S)? "
-    decision = nil
-    loop do
-      decision = gets.chomp.downcase
-      break if ["hit", "stay", "h", "s"].include?(decision)
-      puts "Sorry, that's an invalid choice. Try again..."
-    end
-    decision
   end
 
   def dealer_turn
+    clear_screen
     loop do
-      dealer_cards
-      if @dealer.card_total < 17
-        @dealer.hit(@deck)
-      else
-        break
-      end
+      @player.display_hand_and_total
+      @dealer.display_hand_and_total
+      break if @dealer.decision(deck) == "stay"
+      break if @dealer.busted?
+      clear_screen
     end
   end
 
-  def show_result
+  def display_welcome_message
+    puts "Welcome to Twenty-One\n\n"
+    puts "The goal is to try to get as close to #{WINNING_TOTAL} as possible," \
+    " without going over."
+    puts "If you go over #{WINNING_TOTAL}, it's a 'bust' and you lose."
+  end
+
+  def deal_cards
+    if deck.cards.count < MIN_CARDS_TO_PLAY
+      deck.reset_and_shuffle
+      puts "Reshuffling deck..."
+    end
+
+    @player.hand = deck.deal(2)
+    @dealer.hand = deck.deal(2)
+  end
+
+  def display_results
     if @player.busted?
-      puts "You busted. Dealer wins!"
+      @player.display_hand_and_total
+      puts "\nYou busted. Dealer wins!"
     elsif @dealer.busted?
-      puts "Dealer busted. You win!"
+      @dealer.display_hand_and_total
+      puts "\nDealer busted. You win!"
     else
+      display_final_hands
       determine_winner
     end
   end
 
   def determine_winner
-    if @player.card_total > @dealer.card_total
-      puts "You win!"
-    elsif @player.card_total < @dealer.card_total
-      puts "Dealer wins!"
+    if @player.total > @dealer.total
+      puts "\nYou win!"
+    elsif @player.total < @dealer.total
+      puts "\nDealer wins!"
     else
-      puts "It's a push."
+      puts "\nIt's a push."
     end
+  end
+
+  def display_final_hands
+    @player.display_hand_and_total
+    @dealer.display_hand_and_total
   end
 
   def play_again?
     answer = nil
     loop do
-      puts "Would you like to play again? (y,n)"
+      puts "\nWould you like to play again? (Y)es or (N)o"
       answer = gets.chomp.downcase
-      break if %w(y n).include?(answer)
-      puts "Sorry, must be y or n"
+      break if %w(y yes n no).include?(answer)
+      puts "\nSorry, must be yes or no"
     end
 
-    answer == 'y'
+    answer.start_with?("y")
   end
 
-  def reset_hand
-    @player.reset_cards
-    @dealer.reset_cards
+  def clear_screen
+    system 'clear' || 'clr'
+  end
+
+  def display_goodbye_message
+    puts "\nThanks for playing Twenty-One!"
   end
 end
 
