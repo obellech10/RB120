@@ -12,7 +12,7 @@ class Participant
   def display_hand_and_total
     total_hand
     hand.each do |card|
-      if card.value == 11
+      if card.value == Card::ACE_VALUE
         puts "Ace of #{card.suit}"
       else
         puts "#{card.value} of #{card.suit}"
@@ -23,12 +23,12 @@ class Participant
 
   def hit(deck)
     card = deck.cards.shift
-    @hand << card
+    hand << card
     total_hand
   end
 
   def busted?
-    total > 21
+    total > Game::WINNING_TOTAL
   end
 
   private
@@ -37,26 +37,28 @@ class Participant
     @total = 0
     @aces = 0
     hand.each do |card|
-      if card.value == 11
-        @total += 11
+      if card.value == Card::ACE_VALUE
+        @total += Card::ACE_VALUE
         @aces += 1
       else
         @total += card.value
       end
     end
     aces.times do
-      break if total <= 21
-      @total -= 10
+      break if total <= Game::WINNING_TOTAL
+      @total -= (Card::ACE_VALUE - 1)
       @aces -= 1
     end
   end
 end
 
 class Dealer < Participant
+  DEALER_STAY_TOTAL = 17
+
   def showing
     puts "\nThe dealer is showing:"
     card = hand.first
-    if card.value == 11
+    if card.value == Card::ACE_VALUE
       puts "Ace of #{card.suit}"
     else
       puts "#{card.value} of #{card.suit}"
@@ -64,7 +66,7 @@ class Dealer < Participant
   end
 
   def decision(deck)
-    if total < 17
+    if total < DEALER_STAY_TOTAL
       hit(deck)
     else
       "stay"
@@ -108,11 +110,11 @@ class Deck
   end
 
   def reset_and_shuffle
-    @cards.clear
+    cards.clear
     (Card::CARDS).each do |card, values|
-      @cards << Card.new(card, values)
+      cards << Card.new(card, values)
     end
-    @cards.shuffle!
+    cards.shuffle!
   end
 end
 
@@ -135,8 +137,9 @@ class Card
     SJ: [10, "Spades"], SQ: [10, "Spades"], SK: [10, "Spades"],
     SA: [11, "Spades"]
   }
+  ACE_VALUE = 11
 
-  attr_accessor :card, :value, :suit
+  attr_accessor :value, :suit
 
   def initialize(card, values)
     @card = card
@@ -146,6 +149,8 @@ class Card
 end
 
 class Game
+  WINNING_TOTAL = 21
+  MIN_CARDS_TO_PLAY = 10
   attr_accessor :deck
 
   def initialize
@@ -198,19 +203,19 @@ class Game
 
   def display_welcome_message
     puts "Welcome to Twenty-One\n\n"
-    puts "The goal is to try to get as close to 21 as possible," \
+    puts "The goal is to try to get as close to #{WINNING_TOTAL} as possible," \
     " without going over."
-    puts "If you go over 21, it's a 'bust' and you lose."
+    puts "If you go over #{WINNING_TOTAL}, it's a 'bust' and you lose."
   end
 
   def deal_cards
-    if deck.cards.count < 10
+    if deck.cards.count < MIN_CARDS_TO_PLAY
       deck.reset_and_shuffle
       puts "Reshuffling deck..."
     end
 
-    @player.hand = @deck.deal(2)
-    @dealer.hand = @deck.deal(2)
+    @player.hand = deck.deal(2)
+    @dealer.hand = deck.deal(2)
   end
 
   def display_results
