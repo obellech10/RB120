@@ -2,13 +2,16 @@ require 'pry'
 system 'clear'
 
 class Participant
-  attr_accessor :name, :hand
+  attr_accessor :hand, :total, :aces
 
   def initialize
     @hand = nil
+    @total = 0
+    @aces = 0
   end
 
-  def display_hand
+  def display_hand_and_total
+    total_hand
     hand.each do |card|
       if card.value == 11
         puts "Ace of #{card.suit}"
@@ -19,28 +22,28 @@ class Participant
     puts "\nTotal Value: #{total}"
   end
 
-  def total
-    total = 0
-    aces = 0
+  def total_hand
+    @total = 0
+    @aces = 0
     hand.each do |card|
       if card.value == 11
-        total += 11
-        aces += 1
+        @total += 11
+        @aces += 1
       else
-        total += card.value
+        @total += card.value
       end
     end
     aces.times do
       break if total <= 21
-      total -= 10
-      aces -= 1
+      @total -= 10
+      @aces -= 1
     end
-    total
   end
 
   def hit(deck)
     card = deck.cards.shift
     @hand << card
+    total_hand
   end
 
   def busted?
@@ -67,14 +70,14 @@ class Dealer < Participant
     end
   end
 
-  def display_hand
+  def display_hand_and_total
     puts "\nThe dealer has the following cards:"
     super
   end
 end
 
 class Player < Participant
-  def display_hand
+  def display_hand_and_total
     puts "\nYou have the following cards:"
     super
   end
@@ -172,8 +175,7 @@ class Game
 
   def player_turn
     loop do
-      @player.total
-      @player.display_hand
+      @player.display_hand_and_total
       @dealer.showing
       break if @player.decision.start_with?("s")
       @player.hit(deck)
@@ -185,9 +187,8 @@ class Game
   def dealer_turn
     clear_screen
     loop do
-      @dealer.total
-      @player.display_hand
-      @dealer.display_hand
+      @player.display_hand_and_total
+      @dealer.display_hand_and_total
       break if @dealer.decision(deck) == "stay"
       break if @dealer.busted?
       clear_screen
@@ -213,10 +214,10 @@ class Game
 
   def display_results
     if @player.busted?
-      @player.display_hand
+      @player.display_hand_and_total
       puts "\nYou busted. Dealer wins!"
     elsif @dealer.busted?
-      @dealer.display_hand
+      @dealer.display_hand_and_total
       puts "\nDealer busted. You win!"
     else
       display_final_hands
@@ -235,8 +236,8 @@ class Game
   end
 
   def display_final_hands
-    @player.display_hand
-    @dealer.display_hand
+    @player.display_hand_and_total
+    @dealer.display_hand_and_total
   end
 
   def play_again?
