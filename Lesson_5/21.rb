@@ -2,12 +2,10 @@ require 'pry'
 system 'clear'
 
 class Participant
-  attr_accessor :name, :hand, :hand_total
+  attr_accessor :name, :hand
 
   def initialize
     @hand = nil
-    @hand_total = 0
-    @aces = 0
   end
 
   def display_hand
@@ -18,48 +16,42 @@ class Participant
         puts "#{card.value} of #{card.suit}"
       end
     end
-    puts "\nTotal Value: #{hand_total}"
+    puts "\nTotal Value: #{total}"
   end
 
-  def calc_hand_total
+  def total
+    total = 0
+    aces = 0
     hand.each do |card|
       if card.value == 11
-        self.hand_total += 11
-        @aces += 1
+        total += 11
+        aces += 1
       else
-        self.hand_total += card.value
+        total += card.value
       end
     end
-    account_for_aces if @aces > 0
-  end
-
-  def account_for_aces
-    return unless hand_total > 21
-    @aces.times do
-      if @hand_total > 21
-        @hand_total -= 10
-        @aces -= 1
-      end
+    aces.times do
+      break if total <= 21
+      total -= 10
+      aces -= 1
     end
+    total
   end
 
   def hit(deck)
     card = deck.cards.shift
     @hand << card
-    self.hand_total += card.value
-    @aces += 1 if card.value == 11
   end
 
   def busted?
-    account_for_aces if @aces > 0
-    hand_total > 21
+    total > 21
   end
 end
 
 class Dealer < Participant
   def showing
     puts "\nThe dealer is showing:"
-    card = hand.last
+    card = hand.first
     if card.value == 11
       puts "Ace of #{card.suit}"
     else
@@ -68,7 +60,7 @@ class Dealer < Participant
   end
 
   def decision(deck)
-    if hand_total < 17
+    if total < 17
       hit(deck)
     else
       "stay"
@@ -147,9 +139,6 @@ class Card
     @value = values[0]
     @suit = values[1]
   end
-
-  # def total_hand_value
-  # end
 end
 
 class Game
@@ -177,14 +166,13 @@ class Game
       clear_screen
       display_results
       break unless play_again?
-      reset_hands
       clear_screen
     end
   end
 
   def player_turn
-    @player.calc_hand_total
     loop do
+      @player.total
       @player.display_hand
       @dealer.showing
       break if @player.decision.start_with?("s")
@@ -196,8 +184,8 @@ class Game
 
   def dealer_turn
     clear_screen
-    @dealer.calc_hand_total
     loop do
+      @dealer.total
       @player.display_hand
       @dealer.display_hand
       break if @dealer.decision(deck) == "stay"
@@ -215,7 +203,6 @@ class Game
 
   def deal_cards
     if deck.cards.count < 10
-      reset_hands
       deck.reset_and_shuffle
       puts "Reshuffling deck..."
     end
@@ -238,9 +225,9 @@ class Game
   end
 
   def determine_winner
-    if @player.hand_total > @dealer.hand_total
+    if @player.total > @dealer.total
       puts "\nYou win!"
-    elsif @player.hand_total < @dealer.hand_total
+    elsif @player.total < @dealer.total
       puts "\nDealer wins!"
     else
       puts "\nIt's a push."
@@ -262,11 +249,6 @@ class Game
     end
 
     answer.start_with?("y")
-  end
-
-  def reset_hands
-    @player.hand_total = 0
-    @dealer.hand_total = 0
   end
 
   def clear_screen
